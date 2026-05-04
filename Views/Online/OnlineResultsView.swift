@@ -1,1 +1,184 @@
-import SwiftUI// ── Round Results ──struct OnlineResultsView: View {    @ObservedObject var vm: OnlineGameViewModel        // ← use eliminatedId from game doc instead of isAlive    var eliminatedPlayer: Player? {        vm.players.first { $0.id == vm.game.eliminatedId }    }        var wasImpostor: Bool {        vm.game.eliminatedId == vm.game.impostorId    }        var body: some View {        VStack(spacing: 28) {            Spacer()                        Text(wasImpostor ? "✅" : "❌")                .font(.system(size: 90))                        if let eliminated = eliminatedPlayer {                Text("\(eliminated.name) was eliminated")                    .font(.title2.bold())                    .foregroundStyle(AppTheme.primaryText)                                Text(wasImpostor                     ? "They WERE the impostor!"                     : "They were NOT the impostor...")                    .font(.headline)                    .foregroundStyle(wasImpostor ? .green : AppTheme.accent)            }                        // Show all players still in game            VStack(spacing: 8) {                Text("Players:")                    .font(.subheadline)                    .foregroundStyle(AppTheme.secondaryText)                ForEach(vm.players) { player in                    HStack {                        Text(player.name)                            .font(.body.bold())                            .foregroundStyle(                                player.id == vm.game.eliminatedId                                ? AppTheme.secondaryText                                : AppTheme.primaryText                            )                        if player.id == vm.game.eliminatedId {                            Text("(eliminated)")                                .font(.caption)                                .foregroundStyle(AppTheme.secondaryText)                        }                    }                }            }            .padding()            .background(AppTheme.cardBackground)            .clipShape(RoundedRectangle(cornerRadius: 12))            .padding(.horizontal)                        Spacer()                        // ← host can start new round if impostor not found            if !wasImpostor {                if vm.isHost {                    Button {                        Task {                            try? await vm.gameService                                .resetForNewGame(gameId: vm.gameId)                        }                    } label: {                        Text("Start New Round")                            .font(.headline)                            .frame(maxWidth: .infinity)                            .padding()                            .background(AppTheme.accent)                            .foregroundStyle(.white)                            .clipShape(RoundedRectangle(cornerRadius: 14))                    }                    .padding(.horizontal, 32)                } else {                    Text("Waiting for host to start next round...")                        .foregroundStyle(AppTheme.secondaryText)                        .font(.subheadline)                }            }                        Spacer().frame(height: 20)        }        .frame(maxWidth: .infinity, maxHeight: .infinity)        .background(AppTheme.background)        .ignoresSafeArea(edges: .bottom)        .navigationBarBackButtonHidden(true)    }}// ── Game Over ──struct OnlineGameOverView: View {    @ObservedObject var vm: OnlineGameViewModel    @Environment(\.dismiss) private var dismiss        var impostorPlayer: Player? {        vm.players.first { $0.id == vm.game.impostorId }    }        // Crew wins if the eliminated player was the impostor    var crewWon: Bool {        vm.game.eliminatedId == vm.game.impostorId    }        var body: some View {        VStack(spacing: 28) {            Spacer()                        Text(crewWon ? "🎉" : "🕵️")                .font(.system(size: 100))                        Text(crewWon ? "Crew Wins!" : "Impostor Wins!")                .font(.largeTitle.bold())                .foregroundStyle(crewWon ? .green : AppTheme.accent)                        VStack(spacing: 8) {                Text("The impostor was:")                    .foregroundStyle(AppTheme.secondaryText)                Text(impostorPlayer?.name ?? "Unknown")                    .font(.title2.bold())                    .foregroundStyle(AppTheme.primaryText)                                Divider()                    .background(AppTheme.secondaryText)                    .padding(.horizontal)                                // ← now shows correct words for each side                HStack {                    VStack(spacing: 4) {                        Text("Crew Word")                            .font(.caption)                            .foregroundStyle(AppTheme.secondaryText)                        Text(vm.game.word)                            .font(.headline.bold())                            .foregroundStyle(AppTheme.primaryText)                    }                                        Spacer()                                        VStack(spacing: 4) {                        Text("Impostor Word")                            .font(.caption)                            .foregroundStyle(AppTheme.secondaryText)                        Text(vm.game.impostorWord)                            .font(.headline.bold())                            .foregroundStyle(AppTheme.accent)                    }                }                .padding(.horizontal, 8)            }            .padding()            .background(AppTheme.cardBackground)            .clipShape(RoundedRectangle(cornerRadius: 12))            .padding(.horizontal)                        Spacer()                        Button {                dismiss()            } label: {                Text("Back to Home")                    .font(.headline)                    .frame(maxWidth: .infinity)                    .padding()                    .background(AppTheme.accent)                    .foregroundStyle(.white)                    .clipShape(RoundedRectangle(cornerRadius: 14))            }            .padding(.horizontal, 32)            .padding(.bottom, 40)        }        .frame(maxWidth: .infinity, maxHeight: .infinity)        .background(AppTheme.background)        .ignoresSafeArea(edges: .bottom)        .navigationBarBackButtonHidden(true)    }}
+import SwiftUI
+
+// ── Round Results ──
+struct OnlineResultsView: View {
+    @ObservedObject var vm: OnlineGameViewModel
+    
+    // ← use eliminatedId from game doc instead of isAlive
+    var eliminatedPlayer: Player? {
+        vm.players.first { $0.id == vm.game.eliminatedId }
+    }
+    
+    var wasImpostor: Bool {
+        vm.game.eliminatedId == vm.game.impostorId
+    }
+    
+    var body: some View {
+        VStack(spacing: 28) {
+            Spacer()
+            
+            Text(wasImpostor ? "✅" : "❌")
+                .font(.system(size: 90))
+            
+            if let eliminated = eliminatedPlayer {
+                Text("\(eliminated.name) was eliminated")
+                    .font(.title2.bold())
+                    .foregroundStyle(AppTheme.primaryText)
+                
+                Text(wasImpostor
+                     ? "They WERE the impostor!"
+                     : "They were NOT the impostor...")
+                    .font(.headline)
+                    .foregroundStyle(wasImpostor ? .green : AppTheme.accent)
+            }
+            
+            // Show all players still in game
+            VStack(spacing: 8) {
+                Text("Players:")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.secondaryText)
+                ForEach(vm.players) { player in
+                    HStack {
+                        Text(player.name)
+                            .font(.body.bold())
+                            .foregroundStyle(
+                                player.id == vm.game.eliminatedId
+                                ? AppTheme.secondaryText
+                                : AppTheme.primaryText
+                            )
+                        if player.id == vm.game.eliminatedId {
+                            Text("(eliminated)")
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.secondaryText)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(AppTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            // ← host can start new round if impostor not found
+            if !wasImpostor {
+                if vm.isHost {
+                    Button {
+                        Task {
+                            try? await vm.gameService
+                                .resetForNewGame(gameId: vm.gameId)
+                        }
+                    } label: {
+                        Text("Start New Round")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(AppTheme.accent)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .padding(.horizontal, 32)
+                } else {
+                    Text("Waiting for host to start next round...")
+                        .foregroundStyle(AppTheme.secondaryText)
+                        .font(.subheadline)
+                }
+            }
+            
+            Spacer().frame(height: 20)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.background)
+        .ignoresSafeArea(edges: .bottom)
+        .navigationBarBackButtonHidden(true)
+    }
+}
+
+// ── Game Over ──
+struct OnlineGameOverView: View {
+    @ObservedObject var vm: OnlineGameViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    var impostorPlayer: Player? {
+        vm.players.first { $0.id == vm.game.impostorId }
+    }
+    
+    // Crew wins if the eliminated player was the impostor
+    var crewWon: Bool {
+        vm.game.eliminatedId == vm.game.impostorId
+    }
+    
+    var body: some View {
+        VStack(spacing: 28) {
+            Spacer()
+            
+            Text(crewWon ? "🎉" : "🕵️")
+                .font(.system(size: 100))
+            
+            Text(crewWon ? "Crew Wins!" : "Impostor Wins!")
+                .font(.largeTitle.bold())
+                .foregroundStyle(crewWon ? .green : AppTheme.accent)
+            
+            VStack(spacing: 8) {
+                Text("The impostor was:")
+                    .foregroundStyle(AppTheme.secondaryText)
+                Text(impostorPlayer?.name ?? "Unknown")
+                    .font(.title2.bold())
+                    .foregroundStyle(AppTheme.primaryText)
+                
+                Divider()
+                    .background(AppTheme.secondaryText)
+                    .padding(.horizontal)
+                
+                // ← now shows correct words for each side
+                HStack {
+                    VStack(spacing: 4) {
+                        Text("Crew Word")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
+                        Text(vm.game.word)
+                            .font(.headline.bold())
+                            .foregroundStyle(AppTheme.primaryText)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(spacing: 4) {
+                        Text("Impostor Word")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.secondaryText)
+                        Text(vm.game.impostorWord)
+                            .font(.headline.bold())
+                            .foregroundStyle(AppTheme.accent)
+                    }
+                }
+                .padding(.horizontal, 8)
+            }
+            .padding()
+            .background(AppTheme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            Button {
+                dismiss()
+            } label: {
+                Text("Back to Home")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accent)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.background)
+        .ignoresSafeArea(edges: .bottom)
+        .navigationBarBackButtonHidden(true)
+    }
+}
