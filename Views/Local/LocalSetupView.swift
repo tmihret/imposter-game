@@ -1,1 +1,131 @@
-import SwiftUIstruct LocalSetupView: View {    @StateObject private var vm = LocalGameViewModel()    @State private var newName: String = ""    @State private var navigateToGame = false        var body: some View {        VStack(spacing: 20) {                        // ── Header ──            VStack(spacing: 6) {                Text("👥 Add Players")                    .font(.largeTitle.bold())                    .foregroundStyle(AppTheme.primaryText)                Text("Minimum 3 players")                    .foregroundStyle(AppTheme.secondaryText)            }            .padding(.top, 16)                        // ── Name Input ──            HStack {                TextField("Enter player name", text: $newName)                    .textFieldStyle(.roundedBorder)                    .autocorrectionDisabled()                                Button("Add") {                    addPlayer()                }                .buttonStyle(.borderedProminent)                .tint(AppTheme.accent)                .disabled(newName.trimmingCharacters(                    in: .whitespacesAndNewlines).isEmpty                )            }            .padding(.horizontal)                        // ── Player List ──            if vm.playerNames.isEmpty {                VStack(spacing: 12) {                    Image(systemName: "person.3")                        .font(.system(size: 40))                        .foregroundStyle(AppTheme.secondaryText)                    Text("No players added yet")                        .foregroundStyle(AppTheme.secondaryText)                        .font(.subheadline)                }                .frame(maxWidth: .infinity)                .padding(.vertical, 40)                .background(AppTheme.cardBackground)                .clipShape(RoundedRectangle(cornerRadius: 12))                .padding(.horizontal)            } else {                ScrollView {                    VStack(spacing: 8) {                        ForEach(vm.playerNames, id: \.self) { name in                            HStack {                                Image(systemName: "person.circle.fill")                                    .foregroundStyle(AppTheme.accent)                                Text(name)                                    .foregroundStyle(AppTheme.primaryText)                                    .font(.body.bold())                                Spacer()                                Button {                                    vm.playerNames.removeAll { $0 == name }                                } label: {                                    Image(systemName: "xmark.circle.fill")                                        .foregroundStyle(AppTheme.secondaryText)                                }                            }                            .padding()                            .background(AppTheme.cardBackground)                            .clipShape(RoundedRectangle(cornerRadius: 12))                        }                    }                    .padding(.horizontal)                }            }                        // ── Player Count ──            Text("\(vm.playerNames.count) players added")                .foregroundStyle(AppTheme.secondaryText)                .font(.caption)                        Spacer()                        // ── Start Button ──            Button {                guard vm.playerNames.count >= 3 else { return }                vm.startGame()                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {                    navigateToGame = true                }            } label: {                Text("Start Game")                    .font(.headline)                    .frame(maxWidth: .infinity)                    .padding()                    .background(vm.playerNames.count >= 3                        ? AppTheme.accent : Color.gray)                    .foregroundStyle(.white)                    .clipShape(RoundedRectangle(cornerRadius: 12))            }            .disabled(vm.playerNames.count < 3)            .padding(.horizontal)            .padding(.bottom, 16)        }        .frame(maxWidth: .infinity, maxHeight: .infinity)        .background(AppTheme.background)        .ignoresSafeArea(edges: .bottom)        .navigationTitle("Local Game")        .navigationBarTitleDisplayMode(.inline)        .navigationDestination(isPresented: $navigateToGame) {            LocalGameFlowView(vm: vm)        }        .onSubmit {            addPlayer()        }    }        private func addPlayer() {        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)        guard !trimmed.isEmpty else { return }        guard !vm.playerNames.contains(trimmed) else {            newName = ""            return        }        vm.playerNames.append(trimmed)        newName = ""    }}
+import SwiftUI
+
+struct LocalSetupView: View {
+    @StateObject private var vm = LocalGameViewModel()
+    @State private var newName: String = ""
+    @State private var navigateToGame = false
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            
+            // ── Header ──
+            VStack(spacing: 6) {
+                Text("👥 Add Players")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(AppTheme.primaryText)
+                Text("Minimum 3 players")
+                    .foregroundStyle(AppTheme.secondaryText)
+            }
+            .padding(.top, 16)
+            
+            // ── Name Input ──
+            HStack {
+                TextField("Enter player name", text: $newName)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                
+                Button("Add") {
+                    addPlayer()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.accent)
+                .disabled(newName.trimmingCharacters(
+                    in: .whitespacesAndNewlines).isEmpty
+                )
+            }
+            .padding(.horizontal)
+            
+            // ── Player List ──
+            if vm.playerNames.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "person.3")
+                        .font(.system(size: 40))
+                        .foregroundStyle(AppTheme.secondaryText)
+                    Text("No players added yet")
+                        .foregroundStyle(AppTheme.secondaryText)
+                        .font(.subheadline)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+                .background(AppTheme.cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal)
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(vm.playerNames, id: \.self) { name in
+                            HStack {
+                                Image(systemName: "person.circle.fill")
+                                    .foregroundStyle(AppTheme.accent)
+                                Text(name)
+                                    .foregroundStyle(AppTheme.primaryText)
+                                    .font(.body.bold())
+                                Spacer()
+                                Button {
+                                    vm.playerNames.removeAll { $0 == name }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(AppTheme.secondaryText)
+                                }
+                            }
+                            .padding()
+                            .background(AppTheme.cardBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            
+            // ── Player Count ──
+            Text("\(vm.playerNames.count) players added")
+                .foregroundStyle(AppTheme.secondaryText)
+                .font(.caption)
+            
+            Spacer()
+            
+            // ── Start Button ──
+            Button {
+                guard vm.playerNames.count >= 3 else { return }
+                vm.startGame()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    navigateToGame = true
+                }
+            } label: {
+                Text("Start Game")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(vm.playerNames.count >= 3
+                        ? AppTheme.accent : Color.gray)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .disabled(vm.playerNames.count < 3)
+            .padding(.horizontal)
+            .padding(.bottom, 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.background)
+        .ignoresSafeArea(edges: .bottom)
+        .navigationTitle("Local Game")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $navigateToGame) {
+            LocalGameFlowView(vm: vm)
+        }
+        .onSubmit {
+            addPlayer()
+        }
+    }
+    
+    private func addPlayer() {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard !vm.playerNames.contains(trimmed) else {
+            newName = ""
+            return
+        }
+        vm.playerNames.append(trimmed)
+        newName = ""
+    }
+}
