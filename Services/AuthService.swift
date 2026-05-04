@@ -1,1 +1,53 @@
-////  AuthService.swift//  imposterFinalProject////  Created by admin on 5/3/26.//import FirebaseAuthimport Foundationclass AuthService: ObservableObject {        @Published var userId: String?    @Published var isSignedIn: Bool = false        init() {        signInAnonymously()    }        //Sign In    func signInAnonymously() {        print("🔄 Attempting anonymous sign in...")        Auth.auth().signInAnonymously { [weak self] result, error in            if let error {                print("❌ Auth error: \(error.localizedDescription)")                return            }            self?.userId = result?.user.uid            self?.isSignedIn = true            print("✅ Signed in: \(result?.user.uid ?? "no uid")")        }    }        //Set Display Name    // Call this when player enters their name    func setDisplayName(_ name: String) async throws {        let changeRequest = Auth.auth().currentUser?            .createProfileChangeRequest()        changeRequest?.displayName = name        try await changeRequest?.commitChanges()        print("✅ Display name set: \(name)")    }        //Helpers    var currentUserId: String? {        Auth.auth().currentUser?.uid    }        var displayName: String? {        Auth.auth().currentUser?.displayName    }}
+//
+//  AuthService.swift
+//  imposterFinalProject
+//
+//  Created by admin on 5/3/26.
+//
+
+
+import FirebaseAuth
+import Foundation
+
+class AuthService: ObservableObject {
+    
+    @Published var userId: String?
+    @Published var isSignedIn: Bool = false
+    
+    init() {
+        signInAnonymously()
+    }
+    
+    //Sign In
+    func signInAnonymously() {
+        print("🔄 Attempting anonymous sign in...")
+        Auth.auth().signInAnonymously { [weak self] result, error in
+            if let error {
+                print("❌ Auth error: \(error.localizedDescription)")
+                return
+            }
+            self?.userId = result?.user.uid
+            self?.isSignedIn = true
+            print("✅ Signed in: \(result?.user.uid ?? "no uid")")
+        }
+    }
+    
+    //Set Display Name
+    // Call this when player enters their name
+    func setDisplayName(_ name: String) async throws {
+        let changeRequest = Auth.auth().currentUser?
+            .createProfileChangeRequest()
+        changeRequest?.displayName = name
+        try await changeRequest?.commitChanges()
+        print("✅ Display name set: \(name)")
+    }
+    
+    //Helpers
+    var currentUserId: String? {
+        Auth.auth().currentUser?.uid
+    }
+    
+    var displayName: String? {
+        Auth.auth().currentUser?.displayName
+    }
+}
