@@ -1,1 +1,22 @@
-////  Player.swift//  imposterFinalProject////  Created by admin on 4/26/26.//import FirebaseFirestorestruct Player: Codable, Identifiable {    @DocumentID var id: String?    var name: String    var isAlive: Bool    var isImpostor: Bool    var vote: String?    var word: String?        var hasVoted: Bool {        vote != nil && vote != ""    }}
+//
+//  Player.swift
+//  imposterFinalProject
+//
+//  Created by admin on 4/26/26.
+//
+
+
+import FirebaseFirestore
+
+struct Player: Codable, Identifiable {
+    @DocumentID var id: String?
+    var name: String
+    var isAlive: Bool
+    var isImpostor: Bool
+    var vote: String?
+    var word: String?
+    
+    var hasVoted: Bool {
+        vote != nil && vote != ""
+    }
+}
