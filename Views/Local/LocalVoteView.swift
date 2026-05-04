@@ -1,1 +1,194 @@
-import SwiftUIstruct LocalVoteView: View {    @ObservedObject var vm: LocalGameViewModel        @State private var currentVoterIndex: Int = 0    @State private var selectedTarget: String? = nil    @State private var isVoteLocked: Bool = true    @State private var votersSnapshot: [String] = []        var currentVoter: String? {        guard currentVoterIndex < votersSnapshot.count else { return nil }        return votersSnapshot[currentVoterIndex]    }        var otherPlayers: [String] {        guard let voter = currentVoter else { return [] }        return votersSnapshot.filter { $0 != voter }    }        var body: some View {        VStack(spacing: 0) {                        // ── Header ──            VStack(spacing: 6) {                Text("🗳️ Voting Time")                    .font(.largeTitle.bold())                    .foregroundStyle(AppTheme.primaryText)                Text("Player \(currentVoterIndex + 1) of \(votersSnapshot.count)")                    .foregroundStyle(AppTheme.secondaryText)            }            .padding(.top, 32)            .padding(.bottom, 20)                        if let voter = currentVoter {                if isVoteLocked {                    PassToVoterScreen(                        voterName: voter,                        onReady: { isVoteLocked = false }                    )                } else {                    VStack(spacing: 16) {                        Text("\(voter), who do you suspect?")                            .font(.headline)                            .foregroundStyle(AppTheme.primaryText)                            .padding(.horizontal)                                                ScrollView {                            VStack(spacing: 10) {                                ForEach(otherPlayers, id: \.self) { player in                                    VoteOptionRow(                                        name: player,                                        isSelected: selectedTarget == player                                    ) {                                        selectedTarget = player                                    }                                }                            }                            .padding(.horizontal)                        }                                                Spacer()                                                Button {                            submitVote()                        } label: {                            Text("Confirm Vote")                                .font(.headline)                                .frame(maxWidth: .infinity)                                .padding()                                .background(selectedTarget != nil                                    ? AppTheme.accent : Color.gray)                                .foregroundStyle(.white)                                .clipShape(RoundedRectangle(cornerRadius: 14))                        }                        .disabled(selectedTarget == nil)                        .padding(.horizontal, 32)                        .padding(.bottom, 32)                    }                }            }        }        .frame(maxWidth: .infinity, maxHeight: .infinity)        .background(AppTheme.background)        .ignoresSafeArea(edges: .bottom)        .navigationBarBackButtonHidden(true)        .onAppear {            votersSnapshot = vm.alivePlayers            currentVoterIndex = 0            isVoteLocked = true        }    }        private func submitVote() {        guard let voter = currentVoter,              let target = selectedTarget else { return }                vm.castVote(voter: voter, target: target)                let nextIndex = currentVoterIndex + 1                if nextIndex < votersSnapshot.count {            currentVoterIndex = nextIndex            selectedTarget = nil            isVoteLocked = true        }    }}struct PassToVoterScreen: View {    let voterName: String    let onReady: () -> Void        var body: some View {        VStack(spacing: 32) {            Spacer()                        Image(systemName: "hand.point.up.left.fill")                .font(.system(size: 70))                .foregroundStyle(AppTheme.accent)                        Text("Pass the phone to")                .font(.title2)                .foregroundStyle(AppTheme.secondaryText)                        Text(voterName)                .font(.largeTitle.bold())                .foregroundStyle(AppTheme.primaryText)                        Text("Don't show your vote to others!")                .font(.subheadline)                .foregroundStyle(AppTheme.accent)                        Spacer()                        Button {                onReady()            } label: {                Text("I have the phone ✓")                    .font(.headline)                    .frame(maxWidth: .infinity)                    .padding()                    .background(AppTheme.accent)                    .foregroundStyle(.white)                    .clipShape(RoundedRectangle(cornerRadius: 14))            }            .padding(.horizontal, 32)            .padding(.bottom, 40)        }        .frame(maxWidth: .infinity, maxHeight: .infinity)        .background(AppTheme.background)        .ignoresSafeArea(edges: .bottom)    }}struct VoteOptionRow: View {    let name: String    let isSelected: Bool    let onTap: () -> Void        var body: some View {        HStack {            Circle()                .fill(isSelected ? AppTheme.accent : AppTheme.cardBackground)                .frame(width: 40, height: 40)                .overlay(                    Text(String(name.prefix(1)))                        .font(.headline)                        .foregroundStyle(isSelected ? .white : AppTheme.primaryText)                )                        Text(name)                .font(.body.bold())                .foregroundStyle(AppTheme.primaryText)                        Spacer()                        if isSelected {                Image(systemName: "checkmark.circle.fill")                    .foregroundStyle(AppTheme.accent)                    .font(.title2)            }        }        .padding()        .background(isSelected            ? AppTheme.accent.opacity(0.1) : AppTheme.cardBackground)        .clipShape(RoundedRectangle(cornerRadius: 12))        .overlay(            RoundedRectangle(cornerRadius: 12)                .stroke(isSelected ? AppTheme.accent : Color.clear, lineWidth: 2)        )        .onTapGesture { onTap() }    }}
+import SwiftUI
+
+struct LocalVoteView: View {
+    @ObservedObject var vm: LocalGameViewModel
+    
+    @State private var currentVoterIndex: Int = 0
+    @State private var selectedTarget: String? = nil
+    @State private var isVoteLocked: Bool = true
+    @State private var votersSnapshot: [String] = []
+    
+    var currentVoter: String? {
+        guard currentVoterIndex < votersSnapshot.count else { return nil }
+        return votersSnapshot[currentVoterIndex]
+    }
+    
+    var otherPlayers: [String] {
+        guard let voter = currentVoter else { return [] }
+        return votersSnapshot.filter { $0 != voter }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            
+            // ── Header ──
+            VStack(spacing: 6) {
+                Text("🗳️ Voting Time")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(AppTheme.primaryText)
+                Text("Player \(currentVoterIndex + 1) of \(votersSnapshot.count)")
+                    .foregroundStyle(AppTheme.secondaryText)
+            }
+            .padding(.top, 32)
+            .padding(.bottom, 20)
+            
+            if let voter = currentVoter {
+                if isVoteLocked {
+                    PassToVoterScreen(
+                        voterName: voter,
+                        onReady: { isVoteLocked = false }
+                    )
+                } else {
+                    VStack(spacing: 16) {
+                        Text("\(voter), who do you suspect?")
+                            .font(.headline)
+                            .foregroundStyle(AppTheme.primaryText)
+                            .padding(.horizontal)
+                        
+                        ScrollView {
+                            VStack(spacing: 10) {
+                                ForEach(otherPlayers, id: \.self) { player in
+                                    VoteOptionRow(
+                                        name: player,
+                                        isSelected: selectedTarget == player
+                                    ) {
+                                        selectedTarget = player
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            submitVote()
+                        } label: {
+                            Text("Confirm Vote")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(selectedTarget != nil
+                                    ? AppTheme.accent : Color.gray)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(selectedTarget == nil)
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 32)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.background)
+        .ignoresSafeArea(edges: .bottom)
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            votersSnapshot = vm.alivePlayers
+            currentVoterIndex = 0
+            isVoteLocked = true
+        }
+    }
+    
+    private func submitVote() {
+        guard let voter = currentVoter,
+              let target = selectedTarget else { return }
+        
+        vm.castVote(voter: voter, target: target)
+        
+        let nextIndex = currentVoterIndex + 1
+        
+        if nextIndex < votersSnapshot.count {
+            currentVoterIndex = nextIndex
+            selectedTarget = nil
+            isVoteLocked = true
+        }
+    }
+}
+
+struct PassToVoterScreen: View {
+    let voterName: String
+    let onReady: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            Spacer()
+            
+            Image(systemName: "hand.point.up.left.fill")
+                .font(.system(size: 70))
+                .foregroundStyle(AppTheme.accent)
+            
+            Text("Pass the phone to")
+                .font(.title2)
+                .foregroundStyle(AppTheme.secondaryText)
+            
+            Text(voterName)
+                .font(.largeTitle.bold())
+                .foregroundStyle(AppTheme.primaryText)
+            
+            Text("Don't show your vote to others!")
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.accent)
+            
+            Spacer()
+            
+            Button {
+                onReady()
+            } label: {
+                Text("I have the phone ✓")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accent)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.background)
+        .ignoresSafeArea(edges: .bottom)
+    }
+}
+
+struct VoteOptionRow: View {
+    let name: String
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        HStack {
+            Circle()
+                .fill(isSelected ? AppTheme.accent : AppTheme.cardBackground)
+                .frame(width: 40, height: 40)
+                .overlay(
+                    Text(String(name.prefix(1)))
+                        .font(.headline)
+                        .foregroundStyle(isSelected ? .white : AppTheme.primaryText)
+                )
+            
+            Text(name)
+                .font(.body.bold())
+                .foregroundStyle(AppTheme.primaryText)
+            
+            Spacer()
+            
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(AppTheme.accent)
+                    .font(.title2)
+            }
+        }
+        .padding()
+        .background(isSelected
+            ? AppTheme.accent.opacity(0.1) : AppTheme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? AppTheme.accent : Color.clear, lineWidth: 2)
+        )
+        .onTapGesture { onTap() }
+    }
+}
